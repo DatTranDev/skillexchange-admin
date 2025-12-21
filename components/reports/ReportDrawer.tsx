@@ -125,14 +125,48 @@ export function ReportDrawer({ isOpen, onClose, report }: ReportDrawerProps) {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Evidence
             </label>
-            <div className="p-4 bg-gray-50 rounded-lg">
+            <div className="space-y-3">
+              {/* Image Preview */}
+              <div className="relative rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-50">
+                <img
+                  src={report.evidence}
+                  alt="Report evidence"
+                  className="w-full h-auto max-h-96 object-contain"
+                  onError={(e) => {
+                    // Hide image if it fails to load
+                    e.currentTarget.style.display = "none";
+                    const container = e.currentTarget.parentElement;
+                    if (container) {
+                      const errorMsg = document.createElement("div");
+                      errorMsg.className =
+                        "p-4 text-center text-sm text-gray-500";
+                      errorMsg.textContent = "Image failed to load";
+                      container.appendChild(errorMsg);
+                    }
+                  }}
+                />
+              </div>
+              {/* Link to open in new tab */}
               <a
                 href={report.evidence}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-primary-600 hover:underline"
+                className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 hover:underline"
               >
-                View Evidence
+                <svg
+                  className="w-4 h-4 mr-1.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
+                </svg>
+                Open in new tab
               </a>
             </div>
           </div>

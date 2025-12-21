@@ -76,6 +76,16 @@ export const useModerationStore = create<ModerationStore>((set, get) => ({
 
   // Load all data
   loadData: async () => {
+    // Skip if data is already loaded or currently loading
+    const currentState = get();
+    if (currentState.dataLoaded || currentState.loading) {
+      console.log(
+        "[ModerationStore] Data already loaded or loading, skipping..."
+      );
+      return;
+    }
+
+    console.log("[ModerationStore] Starting data load...");
     set({ loading: true, error: null });
 
     try {

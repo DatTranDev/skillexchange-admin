@@ -77,6 +77,7 @@ export function Drawer({
         )}
         style={{
           position: "fixed",
+          margin: 0,
           top: 0,
           right: 0,
           bottom: 0,

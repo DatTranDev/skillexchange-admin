@@ -6,11 +6,13 @@ import { Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useSessionStore } from "@/stores/sessionStore";
+import { useModerationStore } from "@/stores/moderationStore";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const { login, loading, error, clearError } = useSessionStore();
+  const { loadData } = useModerationStore();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -30,6 +32,10 @@ export default function AdminLoginPage() {
     );
 
     if (success) {
+      // Load data immediately after successful login
+      console.log("[LoginPage] Login successful, loading data...");
+      await loadData();
+      console.log("[LoginPage] Data loaded, redirecting...");
       router.push("/admin");
     }
   };

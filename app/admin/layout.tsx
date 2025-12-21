@@ -43,12 +43,14 @@ export default function AdminLayout({
   }, [isAuthed, isHydrated, isLoginPage, pathname, router]);
 
   useEffect(() => {
-    console.log("[AdminLayout] Data load check:", { isAuthed });
-    if (isAuthed) {
+    console.log("[AdminLayout] Data load check:", { isAuthed, isHydrated });
+    // Load data when authenticated and hydration is complete
+    // Only load if data hasn't been loaded yet
+    if (isAuthed && isHydrated) {
       console.log("[AdminLayout] Loading moderation data...");
       loadData();
     }
-  }, [isAuthed, loadData]);
+  }, [isAuthed, isHydrated, loadData]);
 
   // Show loader only for protected pages during hydration
   if (!isHydrated && !isLoginPage) {
