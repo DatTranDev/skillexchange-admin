@@ -7,6 +7,7 @@ import { Topbar } from "@/components/layout/Topbar";
 import { useSessionStore } from "@/stores/sessionStore";
 import { useModerationStore } from "@/stores/moderationStore";
 import { PageLoader } from "@/components/common/LoadingSpinner";
+import { Loader2 } from "lucide-react";
 
 export default function AdminLayout({
   children,
@@ -16,7 +17,7 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthed, hydrateFromCookieOrStorage } = useSessionStore();
-  const { loadData, dataLoaded } = useModerationStore();
+  const { loadData, loading } = useModerationStore();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -42,12 +43,12 @@ export default function AdminLayout({
   }, [isAuthed, isHydrated, isLoginPage, pathname, router]);
 
   useEffect(() => {
-    console.log("[AdminLayout] Data load check:", { isAuthed, dataLoaded });
-    if (isAuthed && !dataLoaded) {
+    console.log("[AdminLayout] Data load check:", { isAuthed });
+    if (isAuthed) {
       console.log("[AdminLayout] Loading moderation data...");
       loadData();
     }
-  }, [isAuthed, dataLoaded, loadData]);
+  }, [isAuthed, loadData]);
 
   // Show loader only for protected pages during hydration
   if (!isHydrated && !isLoginPage) {
@@ -71,6 +72,16 @@ export default function AdminLayout({
 
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
+      {/* Loading indicator */}
+      {loading && (
+        <div className="fixed top-0 left-0 right-0 h-1 bg-primary-200 z-50">
+          <div
+            className="h-full bg-primary-600 animate-pulse"
+            style={{ width: "60%" }}
+          ></div>
+        </div>
+      )}
+
       {/* Sidebar */}
       <Sidebar
         isMobileOpen={isMobileSidebarOpen}

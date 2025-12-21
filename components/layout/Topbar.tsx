@@ -4,6 +4,7 @@ import React from "react";
 import { LogOut, Menu, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSessionStore } from "@/stores/sessionStore";
+import { useModerationStore } from "@/stores/moderationStore";
 import { getInitials } from "@/lib/utils";
 
 interface TopbarProps {
@@ -14,9 +15,11 @@ interface TopbarProps {
 export function Topbar({ title, onMenuClick }: TopbarProps) {
   const router = useRouter();
   const { adminEmail, adminUser, logout } = useSessionStore();
+  const { resetStore } = useModerationStore();
 
   const handleLogout = async () => {
     await logout();
+    resetStore(); // Clear moderation data when logging out
     router.push("/admin/login");
   };
 

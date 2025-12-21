@@ -106,7 +106,6 @@ export interface UserModerationStats {
   reportsReceived: number;
   openReports: number;
   reportedMessagesCount: number;
-  autoHiddenMessagesCount: number;
   lastReportedAt?: string;
   toxicityStrikes: number;
   status: UserStatus;
@@ -125,7 +124,6 @@ export interface AuditLog {
 
 export interface DashboardSummary {
   openReportsCount: number;
-  autoHiddenMessagesCount: number;
   topReportedUsers: UserModerationStats[];
   recentOpenReports: Report[];
 }

@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Flag, MessageSquareOff, Users, Eye } from "lucide-react";
+import { Flag, Users, Eye } from "lucide-react";
 import { useModerationStore } from "@/stores/moderationStore";
 import { DataTable } from "@/components/table/DataTable";
 import { ReportStatusBadge } from "@/components/ui/Badge";
@@ -24,13 +24,6 @@ export default function AdminDashboard() {
       bgColor: "bg-red-50",
     },
     {
-      title: "Auto-hidden Messages",
-      value: summary.autoHiddenMessagesCount,
-      icon: MessageSquareOff,
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-50",
-    },
-    {
       title: "Top Reported Users",
       value: summary.topReportedUsers.length,
       icon: Users,
@@ -50,7 +43,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {kpiCards.map((kpi) => {
           const Icon = kpi.icon;
           return (

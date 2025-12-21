@@ -58,6 +58,7 @@ interface ModerationActions {
   // Utilities
   clearError: () => void;
   addAuditLog: (log: Omit<AuditLog, "id" | "createdAt">) => void;
+  resetStore: () => void;
 }
 
 type ModerationStore = ModerationState & ModerationActions;
@@ -75,8 +76,6 @@ export const useModerationStore = create<ModerationStore>((set, get) => ({
 
   // Load all data
   loadData: async () => {
-    if (get().dataLoaded) return;
-
     set({ loading: true, error: null });
 
     try {
@@ -132,7 +131,6 @@ export const useModerationStore = create<ModerationStore>((set, get) => ({
           reportsReceived: userReports.length,
           openReports: openReports.length,
           reportedMessagesCount: 0, // Would need message data
-          autoHiddenMessagesCount: 0,
           lastReportedAt:
             userReports.length > 0
               ? userReports.sort(
@@ -418,7 +416,6 @@ export const useModerationStore = create<ModerationStore>((set, get) => ({
 
     return {
       openReportsCount: openReports.length,
-      autoHiddenMessagesCount: 0, // Would need message data
       topReportedUsers,
       recentOpenReports,
     };
@@ -485,5 +482,18 @@ export const useModerationStore = create<ModerationStore>((set, get) => ({
     set((state) => ({
       auditLogs: [newLog, ...state.auditLogs],
     }));
+  },
+
+  resetStore: () => {
+    set({
+      users: new Map(),
+      reports: new Map(),
+      messages: new Map(),
+      statsByUser: new Map(),
+      auditLogs: [],
+      loading: false,
+      error: null,
+      dataLoaded: false,
+    });
   },
 }));
