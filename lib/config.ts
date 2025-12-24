@@ -1,6 +1,5 @@
 const API_CONFIG = {
-  // BASE_URL: "https://se405-skillexchangebe.onrender.com",
-  BASE_URL: "http://localhost:3000",
+  BASE_URL: "https://se405-skillexchangebe.onrender.com",
   API_VERSION: "/api/v1",
 };
 
