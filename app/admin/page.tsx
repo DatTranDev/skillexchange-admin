@@ -226,12 +226,7 @@ export default function AdminDashboard() {
                   key: "status",
                   header: "Status",
                   render: (report) => (
-                    <ReportStatusBadge
-                      status={
-                        report.status ||
-                        (report.isResolved ? "RESOLVED" : "OPEN")
-                      }
-                    />
+                    <ReportStatusBadge isResolved={report.isResolved} />
                   ),
                 },
               ]}

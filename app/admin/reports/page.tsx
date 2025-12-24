@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ReportDrawer } from "@/components/reports/ReportDrawer";
 import { formatRelativeTime, debounce } from "@/lib/utils";
-import { ReportStatus, TargetType, ReasonCode } from "@/types";
+import { TargetType } from "@/types";
 import type { Report, ReportFilters } from "@/types";
 
 export default function ReportsPage() {
@@ -22,9 +22,13 @@ export default function ReportsPage() {
 
   // State for filters
   const [filters, setFilters] = useState<ReportFilters>({
-    status: (searchParams.get("status") as ReportStatus) || "ALL",
+    isResolved:
+      searchParams.get("resolved") === "true"
+        ? true
+        : searchParams.get("resolved") === "false"
+        ? false
+        : "ALL",
     targetType: (searchParams.get("type") as TargetType) || "ALL",
-    reasonCode: (searchParams.get("reason") as ReasonCode) || "ALL",
     search: searchParams.get("q") || "",
   });
 
@@ -38,12 +42,10 @@ export default function ReportsPage() {
   // Update URL when filters change
   useEffect(() => {
     const params = new URLSearchParams();
-    if (filters.status && filters.status !== "ALL")
-      params.set("status", filters.status);
+    if (filters.isResolved !== "ALL")
+      params.set("resolved", String(filters.isResolved));
     if (filters.targetType && filters.targetType !== "ALL")
       params.set("type", filters.targetType);
-    if (filters.reasonCode && filters.reasonCode !== "ALL")
-      params.set("reason", filters.reasonCode);
     if (filters.search) params.set("q", filters.search);
 
     const newUrl = params.toString()
@@ -85,29 +87,28 @@ export default function ReportsPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Status filter */}
           <Select
             label="Status"
-            value={filters.status || "ALL"}
+            value={String(filters.isResolved)}
             onChange={(e) =>
               setFilters({
                 ...filters,
-                status: e.target.value as ReportStatus | "ALL",
+                isResolved:
+                  e.target.value === "ALL" ? "ALL" : e.target.value === "true",
               })
             }
             options={[
-              { value: "ALL", label: "All Statuses" },
-              { value: ReportStatus.OPEN, label: "Open" },
-              { value: ReportStatus.UNDER_REVIEW, label: "Under Review" },
-              { value: ReportStatus.RESOLVED, label: "Resolved" },
-              { value: ReportStatus.REJECTED, label: "Rejected" },
+              { value: "ALL", label: "All" },
+              { value: "false", label: "Not resolved" },
+              { value: "true", label: "Resolved" },
             ]}
           />
 
           {/* Target Type filter */}
           <Select
-            label="Target Type"
+            label="Report type"
             value={filters.targetType || "ALL"}
             onChange={(e) =>
               setFilters({
@@ -116,30 +117,9 @@ export default function ReportsPage() {
               })
             }
             options={[
-              { value: "ALL", label: "All Types" },
+              { value: "ALL", label: "All" },
               { value: TargetType.USER, label: "User" },
               { value: TargetType.MESSAGE, label: "Message" },
-            ]}
-          />
-
-          {/* Reason filter */}
-          <Select
-            label="Reason"
-            value={filters.reasonCode || "ALL"}
-            onChange={(e) =>
-              setFilters({
-                ...filters,
-                reasonCode: e.target.value as ReasonCode | "ALL",
-              })
-            }
-            options={[
-              { value: "ALL", label: "All Reasons" },
-              { value: ReasonCode.HARASSMENT, label: "Harassment" },
-              { value: ReasonCode.SPAM, label: "Spam" },
-              { value: ReasonCode.HATE, label: "Hate Speech" },
-              { value: ReasonCode.SCAM, label: "Scam" },
-              { value: ReasonCode.VIOLENCE, label: "Violence" },
-              { value: ReasonCode.OTHER, label: "Other" },
             ]}
           />
 
@@ -164,9 +144,8 @@ export default function ReportsPage() {
         </div>
 
         {/* Clear filters */}
-        {(filters.status !== "ALL" ||
+        {(filters.isResolved !== "ALL" ||
           filters.targetType !== "ALL" ||
-          filters.reasonCode !== "ALL" ||
           filters.search) && (
           <div className="mt-4">
             <Button
@@ -174,9 +153,8 @@ export default function ReportsPage() {
               size="sm"
               onClick={() => {
                 setFilters({
-                  status: "ALL",
+                  isResolved: "ALL",
                   targetType: "ALL",
-                  reasonCode: "ALL",
                   search: "",
                 });
                 setSearchInput("");
@@ -282,12 +260,7 @@ export default function ReportsPage() {
                   key: "status",
                   header: "Status",
                   render: (report) => (
-                    <ReportStatusBadge
-                      status={
-                        report.status ||
-                        (report.isResolved ? "RESOLVED" : "OPEN")
-                      }
-                    />
+                    <ReportStatusBadge isResolved={report.isResolved} />
                   ),
                 },
                 {

@@ -1,23 +1,7 @@
 // Enums
-export enum ReportStatus {
-  OPEN = "OPEN",
-  UNDER_REVIEW = "UNDER_REVIEW",
-  RESOLVED = "RESOLVED",
-  REJECTED = "REJECTED",
-}
-
 export enum TargetType {
   USER = "USER",
   MESSAGE = "MESSAGE",
-}
-
-export enum ReasonCode {
-  HARASSMENT = "HARASSMENT",
-  SPAM = "SPAM",
-  HATE = "HATE",
-  SCAM = "SCAM",
-  VIOLENCE = "VIOLENCE",
-  OTHER = "OTHER",
 }
 
 export enum UserStatus {
@@ -49,6 +33,9 @@ export interface User {
   rankElo?: number;
   isDelete?: boolean;
   isAdmin?: boolean;
+  isBanned?: boolean;
+  banReason?: string;
+  bannedAt?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -91,9 +78,7 @@ export interface Report {
   createdAt: string;
   updatedAt: string;
   // Extended fields for admin moderation
-  status?: ReportStatus;
   targetType?: TargetType;
-  reasonCode?: ReasonCode;
   resolutionNote?: string;
   resolvedByAdminId?: string;
   targetMessageId?: string;
@@ -129,9 +114,8 @@ export interface DashboardSummary {
 }
 
 export interface ReportFilters {
-  status?: ReportStatus | "ALL";
+  isResolved?: boolean | "ALL";
   targetType?: TargetType | "ALL";
-  reasonCode?: ReasonCode | "ALL";
   search?: string;
 }
 

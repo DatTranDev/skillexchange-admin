@@ -68,9 +68,7 @@ export function ReportDrawer({ isOpen, onClose, report }: ReportDrawerProps) {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Status
           </label>
-          <ReportStatusBadge
-            status={report.status || (report.isResolved ? "RESOLVED" : "OPEN")}
-          />
+          <ReportStatusBadge isResolved={report.isResolved} />
         </div>
 
         {/* Reporter Info */}
@@ -112,7 +110,7 @@ export function ReportDrawer({ isOpen, onClose, report }: ReportDrawerProps) {
         {/* Report Content */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Report Reason
+            Report Content
           </label>
           <div className="p-4 bg-gray-50 rounded-lg">
             <p className="text-sm text-gray-900">{report.content}</p>
@@ -224,15 +222,7 @@ export function ReportDrawer({ isOpen, onClose, report }: ReportDrawerProps) {
               disabled={isProcessing}
               className="flex-1"
             >
-              {isProcessing ? <LoadingSpinner size="sm" /> : "Resolve"}
-            </Button>
-            <Button
-              variant="danger"
-              onClick={handleReject}
-              disabled={isProcessing}
-              className="flex-1"
-            >
-              {isProcessing ? <LoadingSpinner size="sm" /> : "Reject"}
+              {isProcessing ? <LoadingSpinner size="sm" /> : "Mark as Resolved"}
             </Button>
           </div>
         )}

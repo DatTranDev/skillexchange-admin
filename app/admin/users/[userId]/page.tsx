@@ -26,8 +26,14 @@ export default function UserModerationPage({
 }: UserModerationPageProps) {
   const router = useRouter();
   const { showToast } = useToast();
-  const { users, getUserModeration, getFilteredReports, setUserStatus } =
-    useModerationStore();
+  const {
+    users,
+    getUserModeration,
+    getFilteredReports,
+    setUserStatus,
+    loading,
+    dataLoaded,
+  } = useModerationStore();
 
   const user = users.get(params.userId);
   const userStats = getUserModeration(params.userId);
@@ -45,6 +51,69 @@ export default function UserModerationPage({
   });
   const [actionNote, setActionNote] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showBanModal, setShowBanModal] = useState(false);
+  const [banReason, setBanReason] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [bannedUsername, setBannedUsername] = useState("");
+
+  // Define handleRedirectHome before early returns
+  const handleRedirectHome = () => {
+    router.push("/admin");
+    window.location.href = "/admin";
+  };
+
+  // Show loading state while data is being fetched
+  if (loading || !dataLoaded) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading user data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If success modal is showing, don't check for user not found
+  if (showSuccessModal) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+          <div className="text-center">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+              <svg
+                className="h-6 w-6 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              User Banned Successfully
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              The user <strong>{bannedUsername}</strong> has been permanently
+              banned. An email notification has been sent to them.
+            </p>
+            <Button
+              variant="primary"
+              onClick={handleRedirectHome}
+              className="w-full"
+            >
+              Go to Dashboard
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!user || !userStats) {
     return (
@@ -57,10 +126,23 @@ export default function UserModerationPage({
     );
   }
 
-  // Get reports for this user
-  const userReports = getFilteredReports({ search: user.username });
+  // Get reports for this user (where this user is the target)
+  const allReports = getFilteredReports({});
+  const userReports = allReports.filter((report) => {
+    const targetId =
+      typeof report.targetID === "string"
+        ? report.targetID
+        : report.targetID._id;
+    return targetId === params.userId;
+  });
 
   const handleUserAction = (action: UserStatus) => {
+    // For ban action, show modal to get ban reason
+    if (action === UserStatus.BANNED) {
+      setShowBanModal(true);
+      return;
+    }
+
     const messages = {
       [UserStatus.SUSPENDED]: {
         title: "Suspend User",
@@ -110,6 +192,32 @@ export default function UserModerationPage({
       setConfirmDialog({ isOpen: false, action: null, title: "", message: "" });
     } else {
       showToast("error", "Failed to update user status");
+    }
+  };
+
+  const handleBanUser = async () => {
+    if (!banReason || banReason.trim() === "") {
+      showToast("error", "Please provide a ban reason");
+      return;
+    }
+
+    // Save username before banning (user will be filtered out after ban)
+    setBannedUsername(user?.username || "Unknown User");
+
+    setIsProcessing(true);
+    const success = await setUserStatus(
+      params.userId,
+      UserStatus.BANNED,
+      banReason
+    );
+    setIsProcessing(false);
+
+    if (success) {
+      setBanReason("");
+      setShowBanModal(false);
+      setShowSuccessModal(true);
+    } else {
+      showToast("error", "Failed to ban user");
     }
   };
 
@@ -169,12 +277,7 @@ export default function UserModerationPage({
                   key: "status",
                   header: "Status",
                   render: (report) => (
-                    <ReportStatusBadge
-                      status={
-                        report.status ||
-                        (report.isResolved ? "RESOLVED" : "OPEN")
-                      }
-                    />
+                    <ReportStatusBadge isResolved={report.isResolved} />
                   ),
                 },
               ]}
@@ -354,6 +457,65 @@ export default function UserModerationPage({
         cancelText="Cancel"
         variant="danger"
       />
+
+      {/* Ban User Modal */}
+      {showBanModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Ban User</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Please provide a reason for banning{" "}
+              <strong>{user?.username}</strong>. This will be sent to the user
+              via email and permanently ban their account.
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Ban Reason <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                placeholder="e.g., Violation of community guidelines, spam, harassment..."
+                value={banReason}
+                onChange={(e) => setBanReason(e.target.value)}
+                disabled={isProcessing}
+              />
+            </div>
+
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
+              <p className="text-sm text-red-800">
+                <strong>Warning:</strong> This action will:
+              </p>
+              <ul className="text-sm text-red-700 mt-2 ml-4 list-disc">
+                <li>Permanently ban the user from accessing the platform</li>
+                <li>Revoke all their active sessions</li>
+                <li>Send an email notification with the ban reason</li>
+              </ul>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowBanModal(false);
+                  setBanReason("");
+                }}
+                disabled={isProcessing}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleBanUser}
+                disabled={isProcessing || !banReason.trim()}
+              >
+                {isProcessing ? "Banning..." : "Ban User"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -260,3 +260,15 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
   clearError: () => set({ error: null }),
 }));
+
+// Initialize the refresh token callback on module load
+apiClient.setRefreshTokenCallback(async () => {
+  const store = useSessionStore.getState();
+  const success = await store.refreshAccessToken();
+
+  if (success) {
+    return store.token;
+  }
+
+  return null;
+});

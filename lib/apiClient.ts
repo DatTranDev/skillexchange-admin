@@ -10,14 +10,20 @@ import type {
 
 class ApiClient {
   private token: string | null = null;
+  private refreshTokenCallback: (() => Promise<string | null>) | null = null;
 
   setToken(token: string | null) {
     this.token = token;
   }
 
+  setRefreshTokenCallback(callback: () => Promise<string | null>) {
+    this.refreshTokenCallback = callback;
+  }
+
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    isRetry: boolean = false
   ): Promise<ApiResponse<T>> {
     const url = buildApiUrl(endpoint);
 
@@ -37,6 +43,28 @@ class ApiClient {
       });
 
       const data = await response.json();
+
+      // Handle 401 Unauthorized - token expired
+      if (response.status === 401 && !isRetry && this.refreshTokenCallback) {
+        console.log("[ApiClient] Token expired, attempting refresh...");
+
+        const newToken = await this.refreshTokenCallback();
+
+        if (newToken) {
+          console.log(
+            "[ApiClient] Token refreshed successfully, retrying request"
+          );
+          this.token = newToken;
+          // Retry the request with the new token
+          return this.request<T>(endpoint, options, true);
+        } else {
+          console.log("[ApiClient] Token refresh failed");
+          return {
+            error: "Session expired. Please login again.",
+            data: undefined,
+          };
+        }
+      }
 
       if (!response.ok) {
         return {
@@ -112,6 +140,13 @@ class ApiClient {
   async deleteUser(userId: string): Promise<ApiResponse<void>> {
     return this.request<void>(`/user/delete/${userId}`, {
       method: "DELETE",
+    });
+  }
+
+  async banUser(userId: string, banReason: string): Promise<ApiResponse<void>> {
+    return this.request<void>(`/user/ban/${userId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ banReason }),
     });
   }
 

@@ -1,6 +1,6 @@
 import React from "react";
 import { cn } from "@/lib/utils";
-import type { ReportStatus, UserStatus, ModerationStatus } from "@/types";
+import type { UserStatus, ModerationStatus } from "@/types";
 
 interface BadgeProps {
   children: React.ReactNode;
@@ -34,22 +34,12 @@ export function Badge({
   );
 }
 
-export function ReportStatusBadge({
-  status,
-}: {
-  status: ReportStatus | string;
-}) {
-  const variants: Record<
-    string,
-    "default" | "success" | "warning" | "danger" | "info"
-  > = {
-    OPEN: "danger",
-    UNDER_REVIEW: "warning",
-    RESOLVED: "success",
-    REJECTED: "default",
-  };
-
-  return <Badge variant={variants[status] || "default"}>{status}</Badge>;
+export function ReportStatusBadge({ isResolved }: { isResolved: boolean }) {
+  return (
+    <Badge variant={isResolved ? "success" : "danger"}>
+      {isResolved ? "Resolved" : "Not Resolved"}
+    </Badge>
+  );
 }
 
 export function UserStatusBadge({ status }: { status: UserStatus | string }) {

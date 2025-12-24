@@ -8,7 +8,6 @@ import {
   AuditLog,
   DashboardSummary,
   ReportFilters,
-  ReportStatus,
   TargetType,
   UserStatus,
   ModerationStatus,
@@ -106,18 +105,17 @@ export const useModerationStore = create<ModerationStore>((set, get) => ({
       const users = usersResponse.data || [];
       const reports = reportsResponse.data || [];
 
-      // Create maps
+      // Create maps (filter out banned users)
       const usersMap = new Map<string, User>();
-      users.forEach((user) => usersMap.set(user._id, user));
+      users
+        .filter((user) => !user.isBanned)
+        .forEach((user) => usersMap.set(user._id, user));
 
       const reportsMap = new Map<string, Report>();
       reports.forEach((report) => {
         // Enhance report with computed fields
         const enhancedReport: Report = {
           ...report,
-          status: report.isResolved
-            ? ("RESOLVED" as ReportStatus)
-            : ("OPEN" as ReportStatus),
           targetType: "USER" as TargetType, // Backend only supports user reports currently
         };
         reportsMap.set(report._id, enhancedReport);
@@ -184,9 +182,6 @@ export const useModerationStore = create<ModerationStore>((set, get) => ({
       reports.forEach((report) => {
         const enhancedReport: Report = {
           ...report,
-          status: report.isResolved
-            ? ("RESOLVED" as ReportStatus)
-            : ("OPEN" as ReportStatus),
           targetType: "USER" as TargetType,
         };
         reportsMap.set(report._id, enhancedReport);
@@ -209,7 +204,10 @@ export const useModerationStore = create<ModerationStore>((set, get) => ({
       const users = response.data || [];
       const usersMap = new Map<string, User>();
 
-      users.forEach((user) => usersMap.set(user._id, user));
+      // Filter out banned users
+      users
+        .filter((user) => !user.isBanned)
+        .forEach((user) => usersMap.set(user._id, user));
 
       set({ users: usersMap });
     } catch (error) {
@@ -235,7 +233,6 @@ export const useModerationStore = create<ModerationStore>((set, get) => ({
         reports.set(reportId, {
           ...report,
           isResolved: true,
-          status: "RESOLVED" as ReportStatus,
           resolutionNote: note,
           updatedAt: new Date().toISOString(),
         });
@@ -263,38 +260,9 @@ export const useModerationStore = create<ModerationStore>((set, get) => ({
   },
 
   rejectReport: async (reportId: string, note?: string) => {
-    try {
-      // Backend doesn't have a reject endpoint, so we'll update locally
-      const reports = new Map(get().reports);
-      const report = reports.get(reportId);
-
-      if (report) {
-        reports.set(reportId, {
-          ...report,
-          status: "REJECTED" as ReportStatus,
-          resolutionNote: note,
-          updatedAt: new Date().toISOString(),
-        });
-
-        set({ reports });
-      }
-
-      get().addAuditLog({
-        adminId: "current-admin",
-        adminEmail: "admin@skillexchange.com",
-        action: "REJECT_REPORT",
-        targetType: "REPORT",
-        targetId: reportId,
-        note,
-      });
-
-      return true;
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to reject report";
-      set({ error: errorMessage });
-      return false;
-    }
+    // Backend doesn't support reject status, so this is a no-op
+    console.warn("Reject report is not supported by backend");
+    return false;
   },
 
   deleteReport: async (reportId: string) => {
@@ -358,8 +326,15 @@ export const useModerationStore = create<ModerationStore>((set, get) => ({
 
       if (status === UserStatus.DELETED) {
         response = await apiClient.deleteUser(userId);
+      } else if (status === UserStatus.BANNED) {
+        // Ban user with reason
+        if (!note || note.trim() === "") {
+          set({ error: "Ban reason is required" });
+          return false;
+        }
+        response = await apiClient.banUser(userId, note);
       } else {
-        // For SUSPENDED/BANNED/ACTIVE, we update user
+        // For SUSPENDED/ACTIVE, we update user
         // Backend doesn't have these statuses natively
         response = await apiClient.updateUser(userId, {});
       }
@@ -408,14 +383,12 @@ export const useModerationStore = create<ModerationStore>((set, get) => ({
     const { reports, statsByUser } = get();
     const reportsArray = Array.from(reports.values());
 
-    const openReports = reportsArray.filter(
-      (r) => r.status === "OPEN" || r.status === "UNDER_REVIEW"
-    );
+    const openReports = reportsArray.filter((r) => !r.isResolved);
 
     const topReportedUsers = Array.from(statsByUser.values())
       .filter((stats) => stats.reportsReceived > 0)
       .sort((a, b) => b.reportsReceived - a.reportsReceived)
-      .slice(0, 10);
+      .slice(0, 5);
 
     const recentOpenReports = openReports
       .sort(
@@ -435,9 +408,9 @@ export const useModerationStore = create<ModerationStore>((set, get) => ({
     const { reports, users } = get();
     let filtered = Array.from(reports.values());
 
-    // Filter by status
-    if (filters.status && filters.status !== "ALL") {
-      filtered = filtered.filter((r) => r.status === filters.status);
+    // Filter by isResolved
+    if (filters.isResolved !== undefined && filters.isResolved !== "ALL") {
+      filtered = filtered.filter((r) => r.isResolved === filters.isResolved);
     }
 
     // Filter by target type
